@@ -1,0 +1,16 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /typescript-tetris-game-1.0.0 # where package.json lives
+    schedule:
+      interval: weekly
+    # Combine all dependency updates (major, minor and patch) into one single PR.
+    groups:
+      all-dependencies:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: deps
+    labels:
+      - dependencies
