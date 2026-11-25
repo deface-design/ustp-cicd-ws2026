@@ -6,12 +6,23 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write # lets the coverage action comment on pull requests
+
 jobs:
   build:
-    name: build
-    runs-on: ubuntu-latest
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false # let both operating systems finish, even if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
     defaults:
       run:
+        shell: bash # same shell on Linux and Windows (Git Bash)
         working-directory: typescript-tetris-game-1.0.0
 
     steps:
@@ -32,8 +43,38 @@ jobs:
         run: npm run build -- --base=./
 
       - name: Upload build artifacts
+        if: matrix.os == 'ubuntu-latest' # the web app is identical on both OS, upload it once
         uses: actions/upload-artifact@v4
         with:
           name: tetris-web-app
           path: typescript-tetris-game-1.0.0/dist/
           if-no-files-found: error
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Upload test results
+        if: ${{ !cancelled() }} # also upload when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: typescript-tetris-game-1.0.0/test-results/
+          if-no-files-found: error
+
+      - name: Measure code coverage
+        if: ${{ !cancelled() }}
+        run: npm run coverage
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: typescript-tetris-game-1.0.0/coverage/
+          if-no-files-found: error
+
+      - name: Coverage summary (job summary + PR comment)
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: typescript-tetris-game-1.0.0
