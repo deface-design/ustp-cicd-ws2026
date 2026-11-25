@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # e.g. v1.0.0
+
+jobs:
+  # Reuse the existing build workflow (build + tests on both OS + artifact upload).
+  build:
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      pull-requests: write # build.yml asks for this (coverage PR comment)
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to create the release and upload assets
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tetris-web-app
+          path: dist
+
+      - name: Zip the web application
+        run: cd dist && zip -r "../tetris-web-app-${GITHUB_REF_NAME}.zip" .
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "USTP CI/CD Tetris $GITHUB_REF_NAME" \
+            --generate-notes \
+            "tetris-web-app-${GITHUB_REF_NAME}.zip"
