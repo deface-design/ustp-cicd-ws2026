@@ -5,6 +5,11 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_call: # lets other workflows (publish.yml) reuse this build
+
+permissions:
+  contents: read
+  pull-requests: write # lets the coverage action comment on pull requests
 
 permissions:
   contents: read
