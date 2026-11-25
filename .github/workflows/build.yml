@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_call: # lets other workflows (publish.yml) reuse this build
 
 permissions:
   contents: read
